@@ -37,13 +37,16 @@
 html, body {
   margin: 0;
   padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
   background: var(--desk);
   background-image:
     radial-gradient(circle at 15% 10%, rgba(255,255,255,0.04), transparent 40%),
     radial-gradient(circle at 85% 90%, rgba(255,255,255,0.03), transparent 45%);
   color: var(--ink);
   font-family: var(--font-display);
-  min-height: 100vh;
 }
 
 button {
@@ -58,10 +61,18 @@ button {
 .page {
   max-width: 1180px;
   margin: 0 auto;
-  padding: 20px 20px 32px;
+  height: 100dvh;
+  height: 100vh; /* fallback for browsers without dvh support */
+  width: 100%;
+  padding: clamp(6px, 1.6dvh, 16px) clamp(8px, 2vw, 20px) clamp(6px, 1.6dvh, 16px);
+  padding-top: calc(clamp(6px, 1.6dvh, 16px) + env(safe-area-inset-top));
+  padding-bottom: calc(clamp(6px, 1.6dvh, 16px) + env(safe-area-inset-bottom));
+  padding-left: calc(clamp(8px, 2vw, 20px) + env(safe-area-inset-left));
+  padding-right: calc(clamp(8px, 2vw, 20px) + env(safe-area-inset-right));
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: clamp(6px, 1.4dvh, 16px);
+  overflow: hidden;
 }
 
 .top-bar {
@@ -70,7 +81,9 @@ button {
   justify-content: space-between;
   gap: 12px;
   color: var(--paper);
-  padding: 4px 6px;
+  padding: 2px 6px;
+  flex: 0 0 auto;
+  min-width: 0;
 }
 
 .sound-toggle {
@@ -79,10 +92,11 @@ button {
   background: rgba(238, 243, 248, 0.08);
   color: var(--paper);
   border-radius: 10px;
-  padding: 8px 14px;
-  font-size: 0.85rem;
+  padding: clamp(5px, 1.2dvh, 8px) clamp(8px, 1.8vw, 14px);
+  font-size: clamp(0.68rem, 1.6vw, 0.85rem);
   font-weight: 600;
   cursor: pointer;
+  white-space: nowrap;
   transition: background 0.15s ease, transform 0.1s ease;
 }
 
@@ -93,22 +107,33 @@ button {
   opacity: 0.6;
 }
 
+.title-block { min-width: 0; }
+
 .title-block h1 {
   margin: 0;
-  font-size: clamp(1.5rem, 3vw, 2.1rem);
+  font-size: clamp(1rem, min(3.4vw, 3.2dvh), 2.1rem);
   font-weight: 700;
   letter-spacing: 0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .subtitle {
-  margin: 4px 0 0;
+  margin: 2px 0 0;
   color: rgba(238, 243, 248, 0.7);
-  font-size: 0.95rem;
+  font-size: clamp(0.7rem, min(2vw, 1.8dvh), 0.95rem);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .workspace {
   display: flex;
-  gap: 18px;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  gap: clamp(8px, 1.6vw, 18px);
   align-items: stretch;
 }
 
@@ -121,11 +146,12 @@ button {
   background: var(--paper);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
-  padding: 12px;
+  padding: clamp(4px, 1vw, 12px);
   display: flex;
   align-items: center;
   justify-content: center;
   min-width: 0;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -161,9 +187,40 @@ button {
   transform: translateX(-50%) translateY(-4px);
 }
 
+/* prank toast — sits near the top so it never collides with the
+   boundary toast (bottom) or the challenge/celebration UI. */
+.prank-toast {
+  position: absolute;
+  left: 50%;
+  top: 14px;
+  transform: translateX(-50%) translateY(-6px);
+  background: var(--violet);
+  color: var(--paper);
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(15, 26, 42, 0.25);
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 6;
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: 88%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.prank-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 #plane {
+  max-width: 100%;
+  max-height: 100%;
   width: 100%;
-  height: auto;
+  height: 100%;
   display: block;
   overflow: visible;
 }
@@ -261,6 +318,82 @@ button {
   100% { transform: translateY(0) rotate(0deg); }
 }
 
+/* ---- Movement-prank animations ------------------------------------------
+   The #rover group itself already glides smoothly between grid points via
+   its own transition (see #rover above) — that transition is what carries
+   the rover across the skipped/extra squares, landing precisely on its
+   real coordinate. These keyframes only decorate the inner #rover-shape
+   on top of that glide, so the landing square is never in doubt. ---- */
+
+/* skip: the rover stretches in the direction of travel, like it's covering
+   extra ground in a hurry, then snaps back to its normal shape. */
+#rover.prank-skip #rover-shape { animation: prank-skip 0.45s ease; }
+@keyframes prank-skip {
+  0%   { transform: scale(1, 1); }
+  40%  { transform: scale(1.45, 0.72); }
+  70%  { transform: scale(0.88, 1.08); }
+  100% { transform: scale(1, 1); }
+}
+
+/* wrong direction: a quick confused spin before settling on the (wrong)
+   square it actually landed on. */
+#rover.prank-wrong #rover-shape { animation: prank-wrong 0.5s ease; }
+@keyframes prank-wrong {
+  0%   { transform: rotate(0deg); }
+  55%  { transform: rotate(-250deg); }
+  100% { transform: rotate(-360deg); }
+}
+
+/* extra step: an exaggerated bounce to sell the "too much energy" feel. */
+#rover.prank-extra #rover-shape { animation: prank-extra 0.5s ease; }
+@keyframes prank-extra {
+  0%, 100% { transform: scale(1); }
+  30%  { transform: scale(1.3); }
+  60%  { transform: scale(0.9); }
+  80%  { transform: scale(1.12); }
+}
+
+/* ---- Last-moment target-change prank ------------------------------------ */
+
+/* the rover's surprised reaction when the target suddenly changes */
+#rover.prank-surprised #rover-shape { animation: prank-surprised 0.5s ease; }
+@keyframes prank-surprised {
+  0%   { transform: scale(1) rotate(0deg); }
+  30%  { transform: scale(1.2) translateY(-6px) rotate(-6deg); }
+  60%  { transform: scale(0.95) translateY(0) rotate(4deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+/* the old target marker shaking right before it's swapped out */
+#target-marker.target-shake {
+  animation: target-shake 0.5s ease;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes target-shake {
+  0%, 100% { transform: translate(0, 0); }
+  20%  { transform: translate(-4px, 2px); }
+  40%  { transform: translate(4px, -2px); }
+  60%  { transform: translate(-3px, 1px); }
+  80%  { transform: translate(3px, -1px); }
+}
+
+/* the new target marker popping in with a bounce, then settling into its
+   normal pulse (both animations run together — they animate different
+   properties, so they don't conflict). */
+.target-ring.target-pop {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation:
+    target-pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    pulse-ring 1.6s ease-in-out infinite 0.4s;
+}
+@keyframes target-pop-in {
+  0%   { transform: scale(0); opacity: 0; }
+  60%  { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
 /* target marker (pulsing ring during a challenge) */
 .target-ring {
   fill: none;
@@ -282,28 +415,32 @@ button {
   flex: 1 1 32%;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  min-width: 220px;
+  gap: clamp(6px, 1.2dvh, 12px);
+  min-width: 200px;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .card {
   background: var(--paper);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
-  padding: 14px 16px;
+  padding: clamp(8px, 1.6dvh, 14px) clamp(10px, 1.6vw, 16px);
+  min-width: 0;
+  flex: 0 0 auto;
 }
 
 .card-label {
   display: block;
-  font-size: 0.72rem;
+  font-size: clamp(0.62rem, 1.4vw, 0.72rem);
   font-weight: 600;
   color: var(--ink-soft);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .position-card .position-value {
   font-family: var(--font-data);
-  font-size: 1.9rem;
+  font-size: clamp(1.1rem, min(3vw, 3dvh), 1.9rem);
   font-weight: 700;
   color: var(--ink);
   line-height: 1.1;
@@ -312,33 +449,35 @@ button {
 .axis-readout {
   display: flex;
   gap: 18px;
-  margin-top: 8px;
+  margin-top: 6px;
   font-family: var(--font-data);
-  font-size: 0.95rem;
+  font-size: clamp(0.75rem, 1.6vw, 0.95rem);
 }
 
 .axis-readout strong { color: var(--amber-dark); }
 
 .quadrant-name {
-  font-size: 1.15rem;
+  font-size: clamp(0.9rem, 2vw, 1.15rem);
   font-weight: 600;
 }
 
 .explain-card p {
   margin: 0;
-  font-size: 0.92rem;
-  line-height: 1.45;
+  font-size: clamp(0.78rem, 1.6vw, 0.92rem);
+  line-height: 1.4;
   color: var(--ink);
+  overflow-wrap: break-word;
 }
 
 .challenge-card .challenge-copy {
   margin: 0 0 4px;
-  font-size: 0.95rem;
+  font-size: clamp(0.82rem, 1.7vw, 0.95rem);
+  overflow-wrap: break-word;
 }
 
 .challenge-card .challenge-progress {
-  margin: 0 0 10px;
-  font-size: 0.88rem;
+  margin: 0 0 8px;
+  font-size: clamp(0.75rem, 1.5vw, 0.88rem);
   color: var(--ink-soft);
   font-family: var(--font-data);
 }
@@ -348,9 +487,10 @@ button {
 }
 
 .success-message {
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   font-weight: 600;
   color: var(--success);
+  overflow-wrap: break-word;
 }
 
 /* =========================================================
@@ -393,25 +533,28 @@ button {
    ========================================================= */
 .controls {
   display: flex;
-  gap: 18px;
+  gap: clamp(8px, 1.6vw, 18px);
   align-items: center;
   flex-wrap: wrap;
   background: var(--paper);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
-  padding: 16px 20px;
+  padding: clamp(8px, 1.6dvh, 16px) clamp(10px, 1.8vw, 20px);
+  flex: 0 0 auto;
+  min-width: 0;
 }
 
 .dpad {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: clamp(4px, 1vh, 8px);
+  flex: 0 0 auto;
 }
 
 .pad-middle-row {
   display: flex;
-  gap: 8px;
+  gap: clamp(4px, 1vh, 8px);
 }
 
 .pad-btn {
@@ -419,12 +562,13 @@ button {
   border-radius: 12px;
   background: var(--ink);
   color: var(--paper);
-  width: 56px;
-  height: 56px;
-  font-size: 1.3rem;
+  width: clamp(44px, 8vmin, 72px);
+  height: clamp(44px, 8vmin, 72px);
+  font-size: clamp(1rem, 3vmin, 1.3rem);
   cursor: pointer;
   box-shadow: 0 3px 0 var(--desk-edge);
   transition: transform 0.1s ease, box-shadow 0.1s ease;
+  flex: 0 0 auto;
 }
 
 .pad-btn:hover { filter: brightness(1.15); }
@@ -447,17 +591,17 @@ button {
 
 .legend {
   flex: 1 1 260px;
-  min-width: 240px;
+  min-width: 200px;
 }
 
 .legend ul {
   list-style: none;
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   padding: 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-size: 0.85rem;
+  font-size: clamp(0.72rem, 1.5vw, 0.85rem);
 }
 
 .legend li {
@@ -480,15 +624,23 @@ button {
 
 .legend-note {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: clamp(0.66rem, 1.3vw, 0.78rem);
   color: var(--ink-soft);
   font-family: var(--font-data);
+  overflow-wrap: break-word;
 }
 
 /* =========================================================
-   RESPONSIVE
+   RESPONSIVE — single-screen, priority-ordered layout
+   Priority when space runs out: 1) grid  2) character
+   3) position  4) controls  5) challenge  6) decorative
+   (explanation panel, legend) — decorative goes first.
    ========================================================= */
-@media (max-width: 900px) {
+
+/* Portrait devices (phones, portrait tablets): stack the grid
+   above a compact row of info cards instead of a side column,
+   so the grid still gets the width it needs. */
+@media (orientation: portrait) {
   .workspace {
     flex-direction: column;
   }
@@ -497,21 +649,72 @@ button {
     flex-wrap: wrap;
   }
   .side-panel .card {
-    flex: 1 1 220px;
+    flex: 1 1 200px;
+  }
+  .plane-wrap {
+    flex: 3 1 0;
+  }
+  .side-panel {
+    flex: 0 0 auto;
   }
 }
 
-@media (max-width: 640px) {
-  .page { padding: 14px 12px 24px; }
-  .side-panel { flex-direction: column; }
-  .controls { flex-direction: column; }
-  .pad-btn {
-    width: 64px;
-    height: 64px;
-    font-size: 1.5rem;
+/* Narrow phones: single-column info cards read better than a
+   cramped two-up wrap, and the explanation/legend panels are
+   the first thing to go so the grid stays the star. */
+@media (orientation: portrait) and (max-width: 480px) {
+  .side-panel {
+    flex-direction: column;
+    flex-wrap: nowrap;
   }
-  .legend { width: 100%; }
+  .explain-card,
+  .legend {
+    display: none;
+  }
+  .controls {
+    justify-content: center;
+  }
 }
+
+/* When vertical space is tight (small phones, and any phone in
+   landscape), drop the purely decorative panels first so the
+   grid, position, controls and challenge info keep their room. */
+@media (max-height: 700px) {
+  .explain-card,
+  .legend {
+    display: none;
+  }
+}
+
+/* Very short viewports (a phone rotated to landscape): the
+   header/workspace/controls stack no longer fits as three full
+   rows, so fold the controls into the same row as the grid
+   using CSS Grid — no HTML changes needed, same elements, new
+   positions. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .page {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      "header  header"
+      "workspace controls";
+  }
+  .top-bar { grid-area: header; }
+  .workspace {
+    grid-area: workspace;
+    min-height: 0;
+    min-width: 0;
+  }
+  .controls {
+    grid-area: controls;
+    flex-direction: column;
+    padding: clamp(6px, 1.4dvh, 12px);
+  }
+  .subtitle { display: none; }
+  .quadrant-card { display: none; }
+}
+
 
 /* =========================================================
    CELEBRATION OVERLAY
@@ -532,8 +735,10 @@ button {
   background: var(--paper);
   border-radius: 20px;
   box-shadow: 0 20px 50px rgba(15, 26, 42, 0.35);
-  padding: 32px 28px;
+  padding: clamp(16px, 3dvh, 32px) clamp(16px, 3vw, 28px);
   max-width: 420px;
+  max-height: 90dvh;
+  overflow-y: auto;
   width: 100%;
   text-align: center;
   animation: celebration-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -545,27 +750,27 @@ button {
 }
 
 .celebration-emoji {
-  font-size: 3rem;
+  font-size: clamp(2rem, 6dvh, 3rem);
   margin: 0 0 4px;
   line-height: 1;
 }
 
 .celebration-card h2 {
   margin: 0 0 10px;
-  font-size: 1.4rem;
+  font-size: clamp(1.05rem, 3dvh, 1.4rem);
   color: var(--ink);
 }
 
 .celebration-result {
   margin: 0 0 8px;
   font-family: var(--font-data);
-  font-size: 1.05rem;
+  font-size: clamp(0.85rem, 2.4dvh, 1.05rem);
   color: var(--ink);
 }
 
 .celebration-howto {
   margin: 0 0 14px;
-  font-size: 0.9rem;
+  font-size: clamp(0.78rem, 2dvh, 0.9rem);
   color: var(--ink-soft);
 }
 
@@ -573,6 +778,7 @@ button {
   margin: 0 0 20px;
   font-weight: 600;
   color: var(--success);
+  font-size: clamp(0.8rem, 2dvh, 1rem);
 }
 
 .celebration-actions {
@@ -590,7 +796,11 @@ button {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #rover, #rover.bump #rover-shape, #rover.celebrate #rover-shape, .target-ring {
+  #rover, #rover.bump #rover-shape, #rover.celebrate #rover-shape,
+  #rover.prank-skip #rover-shape, #rover.prank-wrong #rover-shape,
+  #rover.prank-extra #rover-shape, #rover.prank-surprised #rover-shape,
+  #target-marker.target-shake, .target-ring.target-pop,
+  .target-ring {
     animation: none !important;
     transition: none !important;
   }
