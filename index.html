@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coordinate Explorer — Learn the Cartesian Plane</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="page">
+
+  <!-- ===================== HEADER ===================== -->
+  <header class="top-bar">
+    <div class="title-block">
+      <h1>Coordinate Explorer</h1>
+      <p class="subtitle">Drive the rover around the grid and learn (x, y)</p>
+    </div>
+    <button id="btn-sound" class="sound-toggle" aria-pressed="true">🔊 Sound on</button>
+  </header>
+
+  <div class="workspace">
+
+    <!-- ===================== COORDINATE PLANE ===================== -->
+    <section class="plane-wrap" aria-label="Coordinate plane">
+      <svg id="plane" viewBox="0 0 800 560" role="img" aria-labelledby="plane-desc">
+        <desc id="plane-desc">A grid from x -10 to 10 and y -7 to 7, with a rover marking the current position.</desc>
+        <!-- quadrant tints, grid lines, axes, ticks, character and guides are drawn by script.js -->
+        <g id="quadrant-tints"></g>
+        <g id="grid-lines"></g>
+        <g id="axes"></g>
+        <g id="ticks"></g>
+        <g id="quadrant-labels"></g>
+        <g id="guides"></g>
+        <g id="target-marker" class="hidden"></g>
+        <g id="rover"></g>
+      </svg>
+      <canvas id="confetti-canvas" class="confetti-canvas hidden" aria-hidden="true"></canvas>
+      <div id="boundary-toast" class="boundary-toast" role="status">You reached the edge of the map!</div>
+    </section>
+
+    <!-- ===================== SIDE PANEL ===================== -->
+    <aside class="side-panel">
+
+      <!-- Position card -->
+      <div class="card position-card" aria-live="polite">
+        <span class="card-label">Current position</span>
+        <div class="position-value">(<span id="pos-x">0</span>, <span id="pos-y">0</span>)</div>
+        <div class="axis-readout">
+          <span>x = <strong id="x-value">0</strong></span>
+          <span>y = <strong id="y-value">0</strong></span>
+        </div>
+      </div>
+
+      <!-- Quadrant card -->
+      <div class="card quadrant-card">
+        <span class="card-label">Location</span>
+        <div id="quadrant-name" class="quadrant-name">Origin</div>
+      </div>
+
+      <!-- Explanation panel -->
+      <div class="card explain-card">
+        <span class="card-label">How to read this position</span>
+        <p id="explain-text">The rover is parked right on the origin, where the axes cross.</p>
+      </div>
+
+      <!-- Challenge card -->
+      <div class="card challenge-card">
+        <span class="card-label">Challenge</span>
+        <div id="challenge-idle">
+          <p class="challenge-copy">Get a target coordinate and drive the rover to it.</p>
+        </div>
+        <div id="challenge-active" class="hidden">
+          <p class="challenge-copy">🎯 Target: <strong id="challenge-target">(0, 0)</strong></p>
+          <p class="challenge-progress">📍 Current: <strong id="challenge-current">(0, 0)</strong></p>
+        </div>
+        <div id="challenge-success" class="hidden">
+          <p class="success-message" id="success-text">✅ Completed!</p>
+        </div>
+        <button id="btn-challenge" class="btn btn-accent">🎯 New challenge</button>
+      </div>
+
+    </aside>
+  </div>
+
+  <!-- ===================== CONTROLS ===================== -->
+  <footer class="controls">
+    <div class="dpad" role="group" aria-label="Move the rover">
+      <button class="pad-btn pad-up" id="btn-up" aria-label="Move up, increase y">▲</button>
+      <div class="pad-middle-row">
+        <button class="pad-btn pad-left" id="btn-left" aria-label="Move left, decrease x">◀</button>
+        <button class="pad-btn pad-center" id="btn-reset" aria-label="Reset to origin">⟲</button>
+        <button class="pad-btn pad-right" id="btn-right" aria-label="Move right, increase x">▶</button>
+      </div>
+      <button class="pad-btn pad-down" id="btn-down" aria-label="Move down, decrease y">▼</button>
+    </div>
+
+    <div class="legend">
+      <span class="card-label">Legend</span>
+      <ul>
+        <li><span class="swatch swatch-x"></span> x-axis — left / right movement</li>
+        <li><span class="swatch swatch-y"></span> y-axis — up / down movement</li>
+        <li><span class="swatch swatch-origin"></span> origin — (0, 0), where the axes meet</li>
+      </ul>
+      <p class="legend-note">Right → x +1 &nbsp;·&nbsp; Left → x −1 &nbsp;·&nbsp; Up → y +1 &nbsp;·&nbsp; Down → y −1</p>
+    </div>
+  </footer>
+
+</div>
+
+<!-- ===================== CELEBRATION OVERLAY ===================== -->
+<div id="celebration-overlay" class="celebration-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="celebration-heading">
+  <div class="celebration-card">
+    <p class="celebration-emoji" aria-hidden="true">🎉</p>
+    <h2 id="celebration-heading">Challenge completed!</h2>
+    <p class="celebration-result" id="celebration-result">Excellent! You reached (0, 0)!</p>
+    <p class="celebration-howto" id="celebration-howto">You moved 0 units.</p>
+    <p class="celebration-encourage">⭐ Great job! You're getting better at coordinates!</p>
+    <div class="celebration-actions">
+      <button id="btn-next-challenge" class="btn btn-accent">🎯 Next challenge</button>
+      <button id="btn-keep-exploring" class="btn btn-ghost">Keep exploring</button>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

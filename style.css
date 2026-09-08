@@ -1,0 +1,597 @@
+/* =========================================================
+   DESIGN TOKENS
+   Theme: a sheet of graph paper on a study desk. The rover
+   drives across real grid paper — colors are drawn from
+   pencil/ink/highlighter, not a generic tech palette.
+   ========================================================= */
+:root {
+  --desk:        #22344a;   /* deep denim desk background */
+  --desk-edge:   #1a2839;
+  --paper:       #eef3f8;   /* pale blue-white graph paper */
+  --paper-line:  #c3d6e8;   /* faint grid lines */
+  --ink:         #1d3557;   /* dark navy ink for text/axes */
+  --ink-soft:    #4b607d;
+
+  --x-axis:      #ef6f6c;   /* coral - x axis / left-right */
+  --y-axis:      #2f9e8f;   /* teal - y axis / up-down */
+  --amber:       #f2a93b;   /* marigold accent - primary actions, rover */
+  --amber-dark:  #d98e21;
+  --violet:      #8b7fd1;
+
+  --tint-q1:     rgba(242, 169, 59, 0.10);
+  --tint-q2:     rgba(47, 158, 143, 0.10);
+  --tint-q3:     rgba(239, 111, 108, 0.10);
+  --tint-q4:     rgba(139, 127, 209, 0.10);
+
+  --success:     #3fa66b;
+
+  --font-display: 'Fredoka', sans-serif;
+  --font-data:    'Space Mono', monospace;
+
+  --radius-card: 14px;
+  --shadow-card: 0 4px 14px rgba(15, 26, 42, 0.18);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--desk);
+  background-image:
+    radial-gradient(circle at 15% 10%, rgba(255,255,255,0.04), transparent 40%),
+    radial-gradient(circle at 85% 90%, rgba(255,255,255,0.03), transparent 45%);
+  color: var(--ink);
+  font-family: var(--font-display);
+  min-height: 100vh;
+}
+
+button {
+  font-family: var(--font-display);
+}
+
+.hidden { display: none !important; }
+
+/* =========================================================
+   LAYOUT SHELL
+   ========================================================= */
+.page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 20px 20px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--paper);
+  padding: 4px 6px;
+}
+
+.sound-toggle {
+  flex: none;
+  border: 1.5px solid rgba(238, 243, 248, 0.35);
+  background: rgba(238, 243, 248, 0.08);
+  color: var(--paper);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.sound-toggle:hover { background: rgba(238, 243, 248, 0.16); }
+.sound-toggle:active { transform: scale(0.97); }
+
+.sound-toggle[aria-pressed="false"] {
+  opacity: 0.6;
+}
+
+.title-block h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.subtitle {
+  margin: 4px 0 0;
+  color: rgba(238, 243, 248, 0.7);
+  font-size: 0.95rem;
+}
+
+.workspace {
+  display: flex;
+  gap: 18px;
+  align-items: stretch;
+}
+
+/* =========================================================
+   COORDINATE PLANE
+   ========================================================= */
+.plane-wrap {
+  position: relative;
+  flex: 1 1 68%;
+  background: var(--paper);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.confetti-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.boundary-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%) translateY(0);
+  background: var(--ink);
+  color: var(--paper);
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(15, 26, 42, 0.25);
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.boundary-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+#plane {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+
+.grid-line {
+  stroke: var(--paper-line);
+  stroke-width: 1;
+}
+
+.axis-line {
+  stroke: var(--ink);
+  stroke-width: 2.5;
+}
+
+.axis-arrow {
+  fill: var(--ink);
+}
+
+.tick-label {
+  font-family: var(--font-data);
+  font-size: 12px;
+  fill: var(--ink-soft);
+}
+
+.quadrant-tint-1 { fill: var(--tint-q1); }
+.quadrant-tint-2 { fill: var(--tint-q2); }
+.quadrant-tint-3 { fill: var(--tint-q3); }
+.quadrant-tint-4 { fill: var(--tint-q4); }
+
+.quadrant-label {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  fill: var(--ink);
+  opacity: 0.28;
+}
+
+.guide-line {
+  stroke: var(--amber-dark);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 5;
+  opacity: 0.85;
+}
+
+.origin-dot {
+  fill: var(--ink);
+}
+
+/* rover group: smooth glide between grid points */
+#rover {
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.rover-glow {
+  fill: var(--amber);
+  opacity: 0.18;
+}
+
+.rover-body {
+  fill: var(--amber);
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+.rover-window {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+.rover-antenna {
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+#rover.bump #rover-shape {
+  animation: bump 0.3s ease;
+}
+
+@keyframes bump {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+#rover.celebrate #rover-shape {
+  animation: celebrate 0.7s ease;
+}
+
+@keyframes celebrate {
+  0%   { transform: translateY(0) rotate(0deg); }
+  25%  { transform: translateY(-14px) rotate(-8deg); }
+  50%  { transform: translateY(0) rotate(6deg); }
+  75%  { transform: translateY(-8px) rotate(-4deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+
+/* target marker (pulsing ring during a challenge) */
+.target-ring {
+  fill: none;
+  stroke: var(--violet);
+  stroke-width: 2.5;
+  stroke-dasharray: 4 4;
+  animation: pulse-ring 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse-ring {
+  0%, 100% { opacity: 0.5; r: 14; }
+  50%      { opacity: 1;   r: 18; }
+}
+
+/* =========================================================
+   SIDE PANEL / CARDS
+   ========================================================= */
+.side-panel {
+  flex: 1 1 32%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 220px;
+}
+
+.card {
+  background: var(--paper);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 14px 16px;
+}
+
+.card-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+}
+
+.position-card .position-value {
+  font-family: var(--font-data);
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.1;
+}
+
+.axis-readout {
+  display: flex;
+  gap: 18px;
+  margin-top: 8px;
+  font-family: var(--font-data);
+  font-size: 0.95rem;
+}
+
+.axis-readout strong { color: var(--amber-dark); }
+
+.quadrant-name {
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.explain-card p {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.challenge-card .challenge-copy {
+  margin: 0 0 4px;
+  font-size: 0.95rem;
+}
+
+.challenge-card .challenge-progress {
+  margin: 0 0 10px;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+  font-family: var(--font-data);
+}
+
+.challenge-card strong {
+  font-family: var(--font-data);
+}
+
+.success-message {
+  margin: 0 0 10px;
+  font-weight: 600;
+  color: var(--success);
+}
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+.btn {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.btn:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.btn-accent {
+  background: var(--amber);
+  color: var(--ink);
+  box-shadow: 0 3px 0 var(--amber-dark);
+  width: 100%;
+}
+
+.btn-accent:hover { filter: brightness(1.04); }
+.btn-accent:active { box-shadow: 0 1px 0 var(--amber-dark); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink);
+  border: 1.5px solid var(--ink-soft);
+}
+
+.btn-ghost:hover { background: rgba(29, 53, 87, 0.06); }
+
+/* =========================================================
+   CONTROLS FOOTER
+   ========================================================= */
+.controls {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  flex-wrap: wrap;
+  background: var(--paper);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 16px 20px;
+}
+
+.dpad {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.pad-middle-row {
+  display: flex;
+  gap: 8px;
+}
+
+.pad-btn {
+  border: none;
+  border-radius: 12px;
+  background: var(--ink);
+  color: var(--paper);
+  width: 56px;
+  height: 56px;
+  font-size: 1.3rem;
+  cursor: pointer;
+  box-shadow: 0 3px 0 var(--desk-edge);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.pad-btn:hover { filter: brightness(1.15); }
+
+.pad-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--desk-edge);
+}
+
+.pad-center {
+  background: var(--x-axis);
+  font-size: 1.1rem;
+}
+
+.pad-btn:focus-visible,
+.btn:focus-visible {
+  outline: 3px solid var(--violet);
+  outline-offset: 2px;
+}
+
+.legend {
+  flex: 1 1 260px;
+  min-width: 240px;
+}
+
+.legend ul {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: inline-block;
+  flex: none;
+}
+
+.swatch-x { background: var(--x-axis); }
+.swatch-y { background: var(--y-axis); }
+.swatch-origin { background: var(--ink); }
+
+.legend-note {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  font-family: var(--font-data);
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+@media (max-width: 900px) {
+  .workspace {
+    flex-direction: column;
+  }
+  .side-panel {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .side-panel .card {
+    flex: 1 1 220px;
+  }
+}
+
+@media (max-width: 640px) {
+  .page { padding: 14px 12px 24px; }
+  .side-panel { flex-direction: column; }
+  .controls { flex-direction: column; }
+  .pad-btn {
+    width: 64px;
+    height: 64px;
+    font-size: 1.5rem;
+  }
+  .legend { width: 100%; }
+}
+
+/* =========================================================
+   CELEBRATION OVERLAY
+   ========================================================= */
+.celebration-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 40, 57, 0.55);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 50;
+}
+
+.celebration-card {
+  background: var(--paper);
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(15, 26, 42, 0.35);
+  padding: 32px 28px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  animation: celebration-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes celebration-pop {
+  0%   { transform: scale(0.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.celebration-emoji {
+  font-size: 3rem;
+  margin: 0 0 4px;
+  line-height: 1;
+}
+
+.celebration-card h2 {
+  margin: 0 0 10px;
+  font-size: 1.4rem;
+  color: var(--ink);
+}
+
+.celebration-result {
+  margin: 0 0 8px;
+  font-family: var(--font-data);
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+
+.celebration-howto {
+  margin: 0 0 14px;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
+.celebration-encourage {
+  margin: 0 0 20px;
+  font-weight: 600;
+  color: var(--success);
+}
+
+.celebration-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.celebration-actions .btn {
+  flex: 1 1 140px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .celebration-card { animation: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #rover, #rover.bump #rover-shape, #rover.celebrate #rover-shape, .target-ring {
+    animation: none !important;
+    transition: none !important;
+  }
+}
